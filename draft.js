@@ -12,6 +12,7 @@ let colorPalette = ["#02073c", "#fd3a69", "#fecd1a", "#d0e1f9", "#ffffff"];
 let ballArray = [];
 let fft, mic;
 let fftBands;
+let minVolumeThreshold = 200;
 
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight).canvas;
@@ -155,12 +156,15 @@ function draw() {
           newBall.collide(mx, my, 20);
         });
         fftBands.forEach((energy, index) => {
-          // Calculate the position of the top of the bar
-          let barX = map(index, 0, fftBands.length, 0, width);
-          let barY = map(energy, 0, 255, height, 0);
+          // Only process bands with energy above the threshold
+          if (energy > minVolumeThreshold) {
+            // Calculate the position of the top of the bar
+            let barX = map(index, 0, fftBands.length, 0, width);
+            let barY = map(energy, 0, 255, height, 0);
 
-          // Tip of bar position to use for collision detection
-          newBall.collide(barX, barY, 10); // Adjust the radius as needed
+            // Tip of bar position to use for collision detection
+            newBall.collide(barX, barY, 10); // Adjust the radius as needed
+          }
         });
         newBall.update(0.2);
         addToLookup(newBall, nextLookup);
@@ -174,16 +178,19 @@ function draw() {
   let spectrum = fft.analyze();
   noStroke();
   for (let i = 0; i < spectrum.length; i++) {
-    let x = map(i, 0, spectrum.length, 0, width);
-    let h = -height + map(spectrum[i], 0, 255, height, 0);
-    fill(i, 255, 255);
-    rect(x, height, width / spectrum.length, h);
+    // Only draw bars for bands with energy above the threshold
+    if (spectrum[i] > minVolumeThreshold) {
+      let x = map(i, 0, spectrum.length, 0, width);
+      let h = -height + map(spectrum[i], 0, 255, height, 0);
+      fill(i, 255, 255);
+      rect(x, height, width / spectrum.length, h);
 
-    // repel balls from the audio visualizer bars
-    let barHeight = map(spectrum[i], 0, 255, 0, height);
-    balls.forEach((ball) => {
-      ball.repel(x, height - barHeight, (width / spectrum.length) * 2, -0.5);
-    });
+      // repel balls from the audio visualizer bars
+      let barHeight = map(spectrum[i], 0, 255, 0, height);
+      balls.forEach((ball) => {
+        ball.repel(x, height - barHeight, (width / spectrum.length) * 2, -0.5);
+      });
+    }
   }
 }
 
