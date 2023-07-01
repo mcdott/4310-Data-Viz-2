@@ -140,11 +140,20 @@ function draw() {
             newBall.collideBall(otherBall);
           }
         });
+
         //newBall.addForce(0,0.05);
         newBall.attract(width / 2, height / 2, 0.005);
         newBall.constrain(0, 0, width, height);
         mouseHistory.forEach(([mx, my]) => {
           newBall.collide(mx, my, 20);
+        });
+        fftBands.forEach((energy, index) => {
+          // Calculate the position of the top of the bar
+          let barX = map(index, 0, fftBands.length, 0, width);
+          let barY = map(energy, 0, 255, height, 0);
+
+          // Tip of bar position to use for collision detection
+          newBall.collide(barX, barY, 10); // Adjust the radius as needed
         });
         newBall.update(0.2);
         addToLookup(newBall, nextLookup);

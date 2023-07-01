@@ -1,18 +1,11 @@
+// Define the setup and draw functions for p5.js
 let lookup;
 let maxBallRadius;
 let lookupGridSize;
 let invLookupGridSize;
 let lookupWidth;
-let mouseHistory;
 let balls;
-let smoothing = 0.8;
-let binCount = 16; // Group every 20 bars into one
-
-let colorPalette = ["#02073c", "#fd3a69", "#fecd1a", "#d0e1f9", "#ffffff"];
-let ballArray = [];
-let fft, mic;
-let fftBands;
-let minVolumeThreshold = 200;
+let frequencyArray = [];
 
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight).canvas;
@@ -41,53 +34,56 @@ function setup() {
     });
   });
 
-  mic = new p5.AudioIn();
-  mic.start();
-  fft = new p5.FFT(smoothing, binCount);
-  fft.setInput(mic);
+  // Audio setup
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  // Get user's microphone
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      // Create an audio analyser
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      frequencyArray = new Uint8Array(analyser.frequencyBinCount);
+    })
+    .catch((err) => {
+      console.log("Error: " + err);
+    });
 }
 
+// This replaces the 'mouseHistory' from the Googlies sketch with 'bars' from the audio visualizer
+// each bar is treated as a line segment for collision with the googlie balls
 function draw() {
-  fftBands = fft.analyze(); // this is where fftBands gets defined
   background(210, 50, 30);
+  // begin the path
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = width / 100;
+  const bars = frequencyArray.length;
+  const step = (Math.PI * 2) / bars;
+  const minVolumeThreshold = 100;
 
-  while (mouseHistory.length && mouseHistory[mouseHistory.length - 1][2] < 0) {
-    mouseHistory.pop();
-  }
-  if (pmouseX !== mouseX || pmouseY !== mouseY) {
-    const mx = mouseX;
-    const my = mouseY;
-    const mouseTTL = 10;
-    if (mouseHistory.length) {
-      const [prevx, prevy] = mouseHistory[0];
-      const dx = mx - prevx;
-      const dy = my - prevy;
-      const d = sqrt(dx * dx + dy * dy);
-      if (d > 10) {
-        const fillCount = floor(d / 10);
-        for (let t = 0; t < fillCount; t++) {
-          const dt = 1 - t / fillCount;
-          mouseHistory.unshift([
-            lerp(prevx, mx, dt),
-            lerp(prevy, my, dt),
-            mouseTTL,
-          ]);
-        }
-      }
+  // get the frequency data
+  analyser.getByteFrequencyData(frequencyArray);
+
+  // Draws frequency bars from the visualizer here - `frequencyArray` is the array of frequency data from the audio visualizer
+  frequencyArray.forEach((f, i) => {
+    if (f > minVolumeThreshold) {
+      // draw the bar
+      const barLength = f;
+      const x1 = Math.cos(step * i) * radius + centerX;
+      const y1 = Math.sin(step * i) * radius + centerY;
+      const x2 = Math.cos(step * i) * (radius + barLength) + centerX;
+      const y2 = Math.sin(step * i) * (radius + barLength) + centerY;
+      // Draw the line/bar representing the audio frequency
+      stroke(0, 100, 100, 50);
+      strokeWeight(2);
+      line(x1, y1, x2, y2);
     }
-    mouseHistory.unshift([mouseX, mouseY, mouseTTL]);
-  }
-
-  blendMode(ADD);
-  noFill();
-  stroke(0, 100, 100, 50);
-  strokeWeight(10);
-  beginShape();
-  mouseHistory = mouseHistory.map(([x, y, t]) => {
-    vertex(x, y);
-    return [x, y, t - 1];
   });
-  endShape();
 
   blendMode(BLEND);
   for (let t = 6; t--; ) {
@@ -95,42 +91,7 @@ function draw() {
     balls = balls.map((ball, i, _balls) => {
       if (t === 0) {
         // DRAW
-        push();
-        const isEye = i % 10 === 0;
-        const idd = i % 6;
-        const huu = (idd * 30 + 200) % 360;
-        const sat = 40 + idd * 3;
-        const bri = isEye ? 100 : 100 - idd * 4;
-        translate(ball.delayedx, ball.delayedy);
-        rotate(
-          i * 77.77 + (noise(i * 33.333, frameCount * 0.005) * 2 - 1) * TWO_PI
-        );
-
-        const eyeMult = isEye ? 1.25 : 1;
-
-        /*
-				strokeWeight(ball.radius*1.75*eyeMult+10);
-				stroke(huu,2,0,20);
-				point(0,0);
-				*/
-
-        strokeWeight(ball.radius * 2 - 5);
-        stroke(huu - 80, isEye ? 0 : sat, bri);
-        point(0, 0);
-
-        if (isEye) {
-          strokeWeight(ball.radius * 0.87);
-          stroke(0);
-          point(
-            ball.radius *
-              (noise(i * 77.77 + 123, frameCount * 0.01) * 2 - 1) *
-              0.5,
-            0
-          );
-        }
-
-        pop();
-
+        // ... your drawing code ...
         return ball;
       } else {
         // UPDATE
@@ -149,23 +110,21 @@ function draw() {
           }
         });
 
-        //newBall.addForce(0,0.05);
         newBall.attract(width / 2, height / 2, 0.005);
         newBall.constrain(0, 0, width, height);
-        mouseHistory.forEach(([mx, my]) => {
-          newBall.collide(mx, my, 20);
-        });
-        fftBands.forEach((energy, index) => {
-          // Only process bands with energy above the threshold
-          if (energy > minVolumeThreshold) {
-            // Calculate the position of the top of the bar
-            let barX = map(index, 0, fftBands.length, 0, width);
-            let barY = map(energy, 0, 255, height, 0);
 
-            // Tip of bar position to use for collision detection
-            newBall.collide(barX, barY, 10); // Adjust the radius as needed
-          }
-        });
+        // // REPLACE THIS PART
+        // frequencyArray.forEach((f, i) => {
+        //   if (f > minVolumeThreshold) {
+        //     const barLength = f;
+        //     const x1 = Math.cos(step * i) * radius + centerX;
+        //     const y1 = Math.sin(step * i) * radius + centerY;
+        //     const x2 = Math.cos(step * i) * (radius + barLength) + centerX;
+        //     const y2 = Math.sin(step * i) * (radius + barLength) + centerY;
+        //     newBall.collideLine(x1, y1, x2, y2);
+        //   }
+        // });
+
         newBall.update(0.2);
         addToLookup(newBall, nextLookup);
         return newBall;
@@ -173,30 +132,88 @@ function draw() {
     });
     lookup = nextLookup;
   }
-
-  // draw audio visualizer colour spectrum
-  let spectrum = fft.analyze();
-  noStroke();
-  for (let i = 0; i < spectrum.length; i++) {
-    // Only draw bars for bands with energy above the threshold
-    if (spectrum[i] > minVolumeThreshold) {
-      let x = map(i, 0, spectrum.length, 0, width);
-      let h = -height + map(spectrum[i], 0, 255, height, 0) / 2;
-      fill(i, 255, 255);
-      rect(x, height, width / spectrum.length, h);
-
-      // repel balls from the audio visualizer bars
-      let barHeight = map(spectrum[i], 0, 255, 0, height / 2);
-      balls.forEach((ball) => {
-        ball.repel(x, height - barHeight, (width / spectrum.length) * 2, -0.5);
-      });
-    }
-  }
 }
 
-/******************
- ** Look up stuff **
- ******************/
+// This adds the audio setup and render functions
+
+// Canvas and drawing variables
+// const canvas = document.getElementById("canvas");
+// const ctx = canvas.getContext("2d");
+// const centerX = canvas.width / 2;
+// const centerY = canvas.height / 2;
+// const radius = canvas.width / 100;
+
+// Audio variables
+let analyser;
+
+function startAudio() {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Get user's microphone
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      // Create an audio analyser
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      frequencyArray = new Uint8Array(analyser.frequencyBinCount);
+      render();
+    })
+    .catch((err) => {
+      console.log("Error: " + err);
+    });
+}
+
+// function render() {
+//   // begin the path
+//   ctx.beginPath();
+
+//   const bars = frequencyArray.length;
+//   const step = (Math.PI * 2) / bars;
+
+//   // get the frequency data and render it
+//   analyser.getByteFrequencyData(frequencyArray);
+
+//   const minVolumeThreshold = 100;
+
+//   frequencyArray.forEach((f, i) => {
+//     if (f > minVolumeThreshold) {
+//       const barLength = f;
+//       const x1 = Math.cos(step * i) * radius + centerX;
+//       const y1 = Math.sin(step * i) * radius + centerY;
+//       const x2 = Math.cos(step * i) * (radius + barLength) + centerX;
+//       const y2 = Math.sin(step * i) * (radius + barLength) + centerY;
+
+//       // draw lines
+//       ctx.lineTo(x1, y1);
+//       ctx.lineTo(x2, y2);
+//     }
+//   });
+
+//   // stroke path
+//   ctx.strokeStyle = "red";
+//   ctx.lineWidth = 2;
+//   ctx.lineCap = "round";
+//   ctx.stroke();
+
+//   // Call the p5.js draw function
+//   draw();
+
+//   // request next frame
+//   requestAnimationFrame(render);
+// }
+
+// Event listener for the start button
+const playButton = document.getElementById("button-play");
+playButton.addEventListener("click", startAudio);
+
+/*****************************
+ ** Look up stuff for balls **
+ *****************************/
 function lookupAtPos(x, y) {
   const lookupIndex = getLookupIndex(x, y);
   return lookupAtIndex(lookupIndex);
