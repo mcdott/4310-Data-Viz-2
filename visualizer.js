@@ -21,15 +21,26 @@ function main() {
       context.fillRect(this.x, this.y, this.width, this.height);
     }
   }
-  const bar1 = new Bar(10, 10, 100, 200, "blue");
   const microphone = new Microphone();
-  console.log(microphone);
+  let bars = [];
+  let barWidth = canvas.width / 256;
+  function createBars() {
+    for (let i = 0; i < 256; i++) {
+      let color = "hsl(" + i + ", 100%, 50%)";
+      let bar = new Bar(i * barWidth, 150, 2, canvas.height / 2, color);
+      bars.push(bar);
+    }
+  }
+  createBars();
+  console.log(bars);
+
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    bar1.draw(ctx);
-    bar1.update();
     // generate audio samples from the microphone
     // animate bars based on microphone input data
+    bars.forEach((bar) => {
+      bar.draw(ctx);
+    });
     requestAnimationFrame(animate);
   }
   animate();
