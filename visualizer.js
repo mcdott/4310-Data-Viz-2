@@ -16,6 +16,12 @@ function main() {
     update(micInput) {
       this.height = micInput * 1000;
     }
+    // Horizontal bars
+    // draw(context) {
+    //   context.fillStyle = this.color;
+    //   context.fillRect(this.x, this.y, this.width, this.height);
+    // }
+    // Radial bars around center point
     draw(context) {
       context.strokeStyle = this.color;
       context.save();
@@ -36,7 +42,7 @@ function main() {
   function createBars() {
     for (let i = 0; i < 256; i++) {
       let color = "hsl(" + i * 2 + ", 100%, 50%)";
-      let bar = new Bar(i * barWidth, 300, 5, canvas.height / 2, color, i);
+      let bar = new Bar(i * barWidth, 300, 3, canvas.height / 2, color, i);
       bars.push(bar);
     }
   }
