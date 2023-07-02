@@ -13,8 +13,7 @@ function main() {
       this.color = color;
     }
     update(micInput) {
-      this.height = micInput;
-      //   this.x++;
+      this.height = micInput * 1000;
     }
     draw(context) {
       context.fillStyle = this.color;
@@ -26,21 +25,24 @@ function main() {
   let barWidth = canvas.width / 256;
   function createBars() {
     for (let i = 0; i < 256; i++) {
-      let color = "hsl(" + i + ", 100%, 50%)";
+      let color = "hsl(" + i * 2 + ", 100%, 50%)";
       let bar = new Bar(i * barWidth, 150, 2, canvas.height / 2, color);
       bars.push(bar);
     }
   }
   createBars();
-  console.log(bars);
 
   function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // generate audio samples from the microphone
-    // animate bars based on microphone input data
-    bars.forEach((bar) => {
-      bar.draw(ctx);
-    });
+    if (microphone.initialized) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // generates audio samples from the microphone
+      const samples = microphone.getSamples();
+      // animate bars based on microphone input data
+      bars.forEach((bar, i) => {
+        bar.update(samples[i]);
+        bar.draw(ctx);
+      });
+    }
     requestAnimationFrame(animate);
   }
   animate();
