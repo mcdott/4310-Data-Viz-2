@@ -14,7 +14,12 @@ function main() {
       this.index = index;
     }
     update(micInput) {
-      this.height = micInput * 1000;
+      const sound = micInput * 1000;
+      if (sound > this.height) {
+        this.height = sound;
+      } else {
+        this.height -= this.height * 0.03;
+      }
     }
     // Horizontal bars
     // draw(context) {
@@ -39,8 +44,22 @@ function main() {
 
     // Bars above and below horizontal line
     draw(context, volume) {
-      context.fillStyle = this.color;
-      context.fillRect(this.x, this.y, this.width, this.height);
+      context.strokeStyle = this.color;
+      context.lineWidth = this.width;
+      context.save();
+      context.translate(canvas.width / 2, canvas.height / 2);
+      context.rotate(this.index * 0.03);
+      context.beginPath();
+      context.bezierCurveTo(
+        this.x / 2,
+        this.y / 2,
+        this.height * -0.5 - 150,
+        this.height + 50,
+        this.x,
+        this.y
+      );
+      context.stroke();
+      context.restore();
     }
   }
 
@@ -51,7 +70,7 @@ function main() {
   function createBars() {
     for (let i = 0; i < fftSize / 2; i++) {
       //   let color = "hsl(" + i * 2 + ", 100%, 50%)";
-      let bar = new Bar(i * barWidth, 300, 0.5, 250, "red", i);
+      let bar = new Bar(0, i, 0.5, 250, "red", i);
       bars.push(bar);
     }
   }
