@@ -13,14 +13,17 @@ function main() {
       this.color = color;
       this.index = index;
     }
-    update(micInput) {
+    update(micInput, volumeThreshold) {
       const sound = micInput * 1000;
-      if (sound > this.height) {
-        this.height = sound;
+      if (volumeThreshold < micInput) {
+        if (sound > this.height) {
+          this.height = sound;
+        }
       } else {
         this.height -= this.height * 0.03;
       }
     }
+
     // Horizontal bars
     // draw(context) {
     //   context.fillStyle = this.color;
@@ -104,16 +107,19 @@ function main() {
       // generates audio samples from the microphone
       const samples = microphone.getSamples();
       const volume = microphone.getVolume();
+      // Set the minimum volume threshold (between 0 and 1) to animate bars
+      const volumeThreshold = 0.1;
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
       // animate bars based on microphone input data
       bars.forEach((bar, i) => {
-        bar.update(samples[i]);
+        bar.update(samples[i], volumeThreshold);
         bar.draw(ctx, volume);
       });
       ctx.restore();
     }
     requestAnimationFrame(animate);
   }
+
   animate();
 }
