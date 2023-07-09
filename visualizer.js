@@ -44,37 +44,44 @@ function main() {
 
     // Bars above and below horizontal line
     draw(context) {
-      context.strokeStyle = this.color;
-      context.lineWidth = this.width * 3;
-      context.save();
-      context.rotate(this.index * 0.043);
-      context.beginPath();
-      context.bezierCurveTo(
-        this.x / 2,
-        this.y / 2,
-        this.height * -0.5 - 150,
-        this.height + 50,
-        this.x,
-        this.y
-      );
-      context.stroke();
-
-      if (this.index > 100) {
+      if (this.index % 3 === 0) {
+        context.strokeStyle = this.color;
+        context.lineWidth = this.width * 10;
+        context.save();
+        context.rotate(this.index * 0.043);
         context.beginPath();
-        context.arc(
+        context.bezierCurveTo(
+          this.x / 2,
+          this.y / 2,
+          this.height * -0.5 - 150,
+          this.height + 50,
           this.x,
-          this.y + this.height,
-          this.height * 0.3,
-          0,
-          2 * Math.PI
+          this.y
         );
         context.stroke();
-        context.beginPath();
-        context.moveTo(this.x, this.y);
-        context.lineTo(this.x, this.y + this.height / 2);
-        context.stroke();
+
+        // Adds circles on ends of bars
+        if (this.index > 100) {
+          context.fillStyle = this.color;
+          context.beginPath();
+          context.arc(
+            this.x,
+            this.y + this.height,
+            this.height * 0.2,
+            0,
+            2 * Math.PI
+          );
+          context.stroke();
+          context.fill();
+
+          // Adds lines to connect circles to bars
+          context.beginPath();
+          context.moveTo(this.x, this.y);
+          context.lineTo(this.x, this.y + this.height / 2);
+          context.stroke();
+        }
+        context.restore();
       }
-      context.restore();
     }
   }
 
