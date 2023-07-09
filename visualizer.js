@@ -43,9 +43,9 @@ function main() {
     // }
 
     // Bars above and below horizontal line
-    draw(context, volume) {
+    draw(context) {
       context.strokeStyle = this.color;
-      context.lineWidth = this.width * 2;
+      context.lineWidth = this.width * 3;
       context.save();
       context.rotate(this.index * 0.043);
       context.beginPath();
@@ -58,6 +58,22 @@ function main() {
         this.y
       );
       context.stroke();
+
+      if (this.index > 100) {
+        context.beginPath();
+        context.arc(
+          this.x,
+          this.y + this.height,
+          this.height * 0.3,
+          0,
+          2 * Math.PI
+        );
+        context.stroke();
+        context.beginPath();
+        context.moveTo(this.x, this.y);
+        context.lineTo(this.x, this.y + this.height / 2);
+        context.stroke();
+      }
       context.restore();
     }
   }
@@ -86,7 +102,7 @@ function main() {
       // animate bars based on microphone input data
       bars.forEach((bar, i) => {
         bar.update(samples[i]);
-        bar.draw(ctx);
+        bar.draw(ctx, volume);
       });
       ctx.restore();
     }
