@@ -21,28 +21,37 @@ function main() {
     //   context.fillStyle = this.color;
     //   context.fillRect(this.x, this.y, this.width, this.height);
     // }
+
     // Radial bars around center point
-    draw(context) {
-      context.strokeStyle = this.color;
-      context.save();
+    // draw(context) {
+    //   context.strokeStyle = this.color;
+    //   context.save();
 
-      context.translate(canvas.width / 2, canvas.height / 2);
-      context.rotate(this.index);
-      context.beginPath();
-      context.moveTo(0, 0);
-      context.lineTo(0, this.height);
-      context.stroke();
+    //   context.translate(canvas.width / 2, canvas.height / 2);
+    //   context.rotate(this.index);
+    //   context.beginPath();
+    //   context.moveTo(0, 0);
+    //   context.lineTo(0, this.height);
+    //   context.stroke();
 
-      context.restore();
+    //   context.restore();
+    // }
+
+    // Bars above and below horizontal line
+    draw(context, volume) {
+      context.fillStyle = this.color;
+      context.fillRect(this.x, this.y, this.width, this.height);
     }
   }
-  const microphone = new Microphone();
+
+  let fftSize = 512;
+  const microphone = new Microphone(fftSize);
   let bars = [];
-  let barWidth = canvas.width / 256;
+  let barWidth = canvas.width / (fftSize / 2);
   function createBars() {
-    for (let i = 0; i < 256; i++) {
-      let color = "hsl(" + i * 2 + ", 100%, 50%)";
-      let bar = new Bar(i * barWidth, 300, 3, canvas.height / 2, color, i);
+    for (let i = 0; i < fftSize / 2; i++) {
+      //   let color = "hsl(" + i * 2 + ", 100%, 50%)";
+      let bar = new Bar(i * barWidth, 300, 0.5, 250, "red", i);
       bars.push(bar);
     }
   }
@@ -53,6 +62,7 @@ function main() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       // generates audio samples from the microphone
       const samples = microphone.getSamples();
+      console.log(samples);
       // animate bars based on microphone input data
       bars.forEach((bar, i) => {
         bar.update(samples[i]);
