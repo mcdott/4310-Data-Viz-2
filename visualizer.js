@@ -45,10 +45,9 @@ function main() {
     // Bars above and below horizontal line
     draw(context, volume) {
       context.strokeStyle = this.color;
-      context.lineWidth = this.width;
+      context.lineWidth = this.width * 2;
       context.save();
-      context.translate(canvas.width / 2, canvas.height / 2);
-      context.rotate(this.index * 0.03);
+      context.rotate(this.index * 0.043);
       context.beginPath();
       context.bezierCurveTo(
         this.x / 2,
@@ -69,8 +68,8 @@ function main() {
   let barWidth = canvas.width / (fftSize / 2);
   function createBars() {
     for (let i = 0; i < fftSize / 2; i++) {
-      //   let color = "hsl(" + i * 2 + ", 100%, 50%)";
-      let bar = new Bar(0, i, 0.5, 250, "red", i);
+      let color = "hsl(" + i * 2 + ", 100%, 50%)";
+      let bar = new Bar(0, i, 0.5, 250, color, i);
       bars.push(bar);
     }
   }
@@ -81,12 +80,15 @@ function main() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       // generates audio samples from the microphone
       const samples = microphone.getSamples();
-      console.log(samples);
+      const volume = microphone.getVolume();
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
       // animate bars based on microphone input data
       bars.forEach((bar, i) => {
         bar.update(samples[i]);
         bar.draw(ctx);
       });
+      ctx.restore();
     }
     requestAnimationFrame(animate);
   }
