@@ -1,5 +1,5 @@
 class Microphone {
-  constructor() {
+  constructor(fftSize = 512) {
     this.initialized = false;
     navigator.mediaDevices
       .getUserMedia({ audio: true })
