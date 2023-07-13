@@ -45,7 +45,7 @@ function main() {
     //   context.restore();
     // }
 
-    // Bars above and below horizontal line
+    // Bars on bezier curve
     draw(context) {
       if (this.index % 3 === 0) {
         context.strokeStyle = this.color;
@@ -101,19 +101,50 @@ function main() {
   }
   createBars();
 
+  let audioPlaying = false;
+  const audioElement = new Audio(
+    "http://localhost:5501/looperman-l-5384552-0327014-vintage-soul-keyboard.wav"
+  );
+  let audioStartTime = 0;
+  let audioStopTime = 0;
+
+  const audioPlayDuration = 5000; // 5 seconds
+  const pauseAfterPlay = 1000; // 1 seconds
+
   function animate() {
     if (microphone.initialized) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // generates audio samples from the microphone
       const samples = microphone.getSamples();
       const volume = microphone.getVolume();
-      // Set the minimum volume threshold (between 0 and 1) to animate bars
-      const volumeThreshold = 0.1;
+      console.log(`Volume: ${volume}`);
+
+      const volumeThreshold = 0.2; // For animation
+      const audioTriggerThreshold = 0.5; // For audio trigger
+      const currentTime = performance.now();
+
+      if (audioPlaying) {
+        if (currentTime - audioStartTime > audioPlayDuration) {
+          audioPlaying = false;
+          audioElement.pause();
+          audioElement.currentTime = 0;
+          audioStopTime = currentTime;
+        }
+      } else if (
+        !audioPlaying &&
+        currentTime - audioStopTime > pauseAfterPlay &&
+        volume > audioTriggerThreshold // Change here
+      ) {
+        audioPlaying = true;
+        audioElement.play().catch((error) => {
+          console.error("Error during audio playback:", error);
+        });
+        audioStartTime = currentTime;
+      }
+
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
-      // animate bars based on microphone input data
       bars.forEach((bar, i) => {
-        bar.update(samples[i], volumeThreshold);
+        bar.update(samples[i], volumeThreshold); // Animation still based on volumeThreshold
         bar.draw(ctx, volume);
       });
       ctx.restore();
